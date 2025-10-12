@@ -132,7 +132,7 @@ export async function playMusic(guildId: string) {
       return;
     }
 
-    const resource = playWithYtDlp(music.url);
+    const resource = await playWithYtDlp(music.url);
     console.log("자료 생성 완료");
 
     player.play(resource);
