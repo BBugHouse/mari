@@ -60,7 +60,7 @@ const AddMusic = new Event("messageCreate", async function (
   // 제목으로 찾기
   const videos = (await ytSearch(song)).videos;
   const video = videos[0];
-  if (!videos) {
+  if (!video) {
     const res = await message.channel.send({
       content: message.author.toString(),
       embeds: [getFailEmbed()],
