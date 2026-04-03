@@ -1,13 +1,61 @@
-import { spawn } from "child_process";
-import { createAudioResource } from "@discordjs/voice";
-import { Readable } from "stream";
+import { spawn, spawnSync, type ChildProcessWithoutNullStreams } from "child_process";
+import {
+  createAudioResource,
+  StreamType,
+  type AudioResource,
+} from "@discordjs/voice";
+import ffmpegPath from "ffmpeg-static";
 
-// 사용 가능한 포맷을 확인하고 최적의 오디오 포맷을 선택하는 함수
+type CommandSpec = {
+  command: string;
+  prefixArgs: string[];
+  label: string;
+};
+
+function resolveYtDlpCommand(): CommandSpec {
+  const candidates: CommandSpec[] = process.platform === "win32"
+    ? [
+        { command: "yt-dlp.exe", prefixArgs: [], label: "yt-dlp" },
+        { command: "yt-dlp", prefixArgs: [], label: "yt-dlp" },
+        { command: "py", prefixArgs: ["-m", "yt_dlp"], label: "py -m yt_dlp" },
+        {
+          command: "python",
+          prefixArgs: ["-m", "yt_dlp"],
+          label: "python -m yt_dlp",
+        },
+      ]
+    : [
+        { command: "yt-dlp", prefixArgs: [], label: "yt-dlp" },
+        { command: "python3", prefixArgs: ["-m", "yt_dlp"], label: "python3 -m yt_dlp" },
+        { command: "python", prefixArgs: ["-m", "yt_dlp"], label: "python -m yt_dlp" },
+      ];
+
+  for (const candidate of candidates) {
+    const result = spawnSync(candidate.command, [...candidate.prefixArgs, "--version"], {
+      stdio: "ignore",
+    });
+
+    if (result.status === 0) {
+      return candidate;
+    }
+  }
+
+  return candidates[0];
+}
+
+function makeSpawnErrorMessage(command: string, error: NodeJS.ErrnoException) {
+  if (error.code === "ENOENT") {
+    return `${command} executable was not found. Install ${command} and make sure it is in PATH.`;
+  }
+
+  return `${command} failed to start: ${error.message}`;
+}
+
 async function getBestAudioFormat(url: string): Promise<string> {
   return new Promise((resolve, reject) => {
-    console.log("🔍 사용 가능한 포맷 확인 중...");
-
-    const formatCheck = spawn("yt-dlp", [
+    const ytDlp = resolveYtDlpCommand();
+    const formatCheck = spawn(ytDlp.command, [
+      ...ytDlp.prefixArgs,
       "--list-formats",
       "--no-playlist",
       "--quiet",
@@ -17,22 +65,21 @@ async function getBestAudioFormat(url: string): Promise<string> {
     let output = "";
     let errorOutput = "";
 
-    formatCheck.stdout?.on("data", (data) => {
+    formatCheck.stdout.on("data", (data) => {
       output += data.toString();
     });
 
-    formatCheck.stderr?.on("data", (data) => {
+    formatCheck.stderr.on("data", (data) => {
       errorOutput += data.toString();
     });
 
     formatCheck.on("close", (code) => {
       if (code !== 0) {
-        console.log("⚠️ 포맷 확인 실패, 기본 포맷 사용:", errorOutput);
+        console.log("Could not inspect formats, falling back to bestaudio:", errorOutput);
         resolve("bestaudio");
         return;
       }
 
-      // 오디오 포맷 우선순위 (품질 순)
       const audioFormats = [
         "bestaudio[ext=m4a]",
         "bestaudio[ext=webm]",
@@ -43,37 +90,57 @@ async function getBestAudioFormat(url: string): Promise<string> {
         "worstaudio",
       ];
 
-      // 사용 가능한 포맷 중에서 가장 좋은 포맷 선택
       for (const format of audioFormats) {
         if (output.includes(format) || output.includes("audio only")) {
-          console.log(`✅ 선택된 포맷: ${format}`);
           resolve(format);
           return;
         }
       }
 
-      // fallback
-      console.log("⚠️ 적합한 오디오 포맷을 찾지 못함, 기본값 사용");
       resolve("bestaudio");
     });
 
-    formatCheck.on("error", (err) => {
-      console.log("⚠️ 포맷 확인 중 오류, 기본 포맷 사용:", err.message);
-      resolve("bestaudio");
+    formatCheck.on("error", (err: NodeJS.ErrnoException) => {
+      reject(new Error(makeSpawnErrorMessage(ytDlp.label, err)));
     });
   });
 }
 
-export function playWithYtDlp(url: string): Promise<any> {
-  console.log("🎵 URL 추출 중...");
+function pipeToFfmpeg(
+  ytDlpProcess: ChildProcessWithoutNullStreams
+): ChildProcessWithoutNullStreams {
+  if (!ffmpegPath) {
+    throw new Error("ffmpeg-static could not resolve an ffmpeg binary.");
+  }
 
+  const ffmpegProcess = spawn(ffmpegPath, [
+    "-loglevel",
+    "error",
+    "-analyzeduration",
+    "0",
+    "-i",
+    "pipe:0",
+    "-f",
+    "s16le",
+    "-ar",
+    "48000",
+    "-ac",
+    "2",
+    "pipe:1",
+  ]);
+
+  ytDlpProcess.stdout.pipe(ffmpegProcess.stdin);
+
+  return ffmpegProcess;
+}
+
+export function playWithYtDlp(url: string): Promise<AudioResource> {
   return new Promise(async (resolve, reject) => {
     try {
-      // 먼저 최적의 포맷을 선택
       const selectedFormat = await getBestAudioFormat(url);
-
-      // 선택된 포맷으로 yt-dlp 프로세스 생성
-      const ytDlpProcess = spawn("yt-dlp", [
+      const ytDlp = resolveYtDlpCommand();
+      const ytDlpProcess = spawn(ytDlp.command, [
+        ...ytDlp.prefixArgs,
         "-f",
         selectedFormat,
         "-o",
@@ -84,38 +151,66 @@ export function playWithYtDlp(url: string): Promise<any> {
         url,
       ]);
 
-      let errorData = "";
+      let ytDlpError = "";
+      let ffmpegError = "";
+      let settled = false;
 
-      // stderr 처리
-      ytDlpProcess.stderr?.on("data", (data) => {
-        errorData += data.toString();
+      const failOnce = (error: Error) => {
+        if (settled) return;
+        settled = true;
+        ytDlpProcess.kill();
+        reject(error);
+      };
+
+      ytDlpProcess.stderr.on("data", (data) => {
+        ytDlpError += data.toString();
       });
 
-      // 프로세스 에러 처리
-      ytDlpProcess.on("error", (err) => {
-        console.error("❌ yt-dlp 실행 실패:", err.message);
-        reject(new Error(`yt-dlp 실행 실패: ${err.message}`));
+      ytDlpProcess.on("error", (err: NodeJS.ErrnoException) => {
+        failOnce(new Error(makeSpawnErrorMessage(ytDlp.label, err)));
       });
 
-      // 프로세스 종료 처리
       ytDlpProcess.on("exit", (code) => {
-        if (code !== 0) {
-          reject(new Error(`yt-dlp 프로세스 실패: ${errorData}`));
+        if (code !== 0 && !settled) {
+          failOnce(
+            new Error(
+              `yt-dlp exited with code ${code}. ${ytDlpError || "No stderr output."}`
+            )
+          );
         }
       });
 
-      // stdout을 Readable 스트림으로 변환
-      const readable = Readable.from(ytDlpProcess.stdout!);
+      const ffmpegProcess = pipeToFfmpeg(ytDlpProcess);
 
-      readable.on("error", (err) => {
-        console.error("🚨 스트림 오류:", err.message);
-        reject(err);
+      ffmpegProcess.stderr.on("data", (data) => {
+        ffmpegError += data.toString();
       });
 
-      console.log("✅ 오디오 리소스 생성 완료");
-      resolve(createAudioResource(readable));
+      ffmpegProcess.on("error", (err: NodeJS.ErrnoException) => {
+        failOnce(new Error(makeSpawnErrorMessage("ffmpeg", err)));
+      });
+
+      ffmpegProcess.on("exit", (code) => {
+        if (code !== 0 && !settled) {
+          failOnce(
+            new Error(
+              `ffmpeg exited with code ${code}. ${ffmpegError || "No stderr output."}`
+            )
+          );
+        }
+      });
+
+      ffmpegProcess.stdout.on("error", (err) => {
+        failOnce(err);
+      });
+
+      settled = true;
+      resolve(
+        createAudioResource(ffmpegProcess.stdout, {
+          inputType: StreamType.Raw,
+        })
+      );
     } catch (err: any) {
-      console.error("🚨 오디오 리소스 생성 실패:", err.message);
       reject(err);
     }
   });
