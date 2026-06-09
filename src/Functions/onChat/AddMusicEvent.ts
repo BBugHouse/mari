@@ -7,7 +7,7 @@ import {
   joinVoiceChannel,
 } from "@discordjs/voice";
 import { getGuild } from "@/Util/Util";
-import ytSearch from "yt-search";
+import { searchFirstVideo } from "@/Util/YtSearchUtil";
 
 const AddMusic = new Event("messageCreate", async function (
   bot,
@@ -57,8 +57,7 @@ const AddMusic = new Event("messageCreate", async function (
   first.
  */
   // 제목으로 찾기
-  const videos = (await ytSearch(song)).videos;
-  const video = videos[0];
+  const video = await searchFirstVideo(song);
   if (!video) {
     const res = await message.channel.send({
       content: message.author.toString(),
@@ -85,7 +84,7 @@ const AddMusic = new Event("messageCreate", async function (
     video.url,
     video.title,
     video.timestamp,
-    video.author.name || "",
+    video.authorName,
     video.thumbnail
   );
 });

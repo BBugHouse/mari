@@ -32,7 +32,6 @@ export async function getGuild(guildId: string) {
       id: true,
       channelId: true,
       messageId: true,
-      musics: true,
     },
   });
   if (!guild) {

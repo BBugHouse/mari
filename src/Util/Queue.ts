@@ -40,30 +40,33 @@ export async function addMusic(
   thumbnail: string
 ) {
   try {
-    const guild = await prisma.guild.update({
-      where: {
-        id: guildId,
-      },
-      data: {
-        musics: {
-          create: {
-            title: title,
-            url: url,
-            timestamp: timestamp,
-            authorName: authorName,
-            thumbnail: thumbnail,
+    const [musicCountBeforeAdd] = await prisma.$transaction([
+      prisma.music.count({
+        where: {
+          guildId: guildId,
+        },
+      }),
+      prisma.guild.update({
+        where: {
+          id: guildId,
+        },
+        data: {
+          musics: {
+            create: {
+              title: title,
+              url: url,
+              timestamp: timestamp,
+              authorName: authorName,
+              thumbnail: thumbnail,
+            },
           },
         },
-      },
-      select: {
-        musics: true,
-      },
-    });
-    if (!guild) {
-      console.log("Guild not found");
-      return;
-    }
-    if (guild.musics.length === 1) {
+        select: {
+          id: true,
+        },
+      }),
+    ]);
+    if (musicCountBeforeAdd === 0) {
       await playMusic(guildId);
       console.log("Playing music");
     }
