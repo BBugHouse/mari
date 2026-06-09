@@ -1,16 +1,13 @@
 import { EmbedBuilder } from "discord.js";
-import { VideoMetadataResult } from "yt-search";
 
 export const getColorEmbed = () => new EmbedBuilder().setColor("#cf85ff");
 
 export const getDefaultEmbed = () =>
   getColorEmbed()
-    .setTitle("🎤 같이 노래할사람!")
+    .setTitle("🎤 노래 대기실")
     .setDescription(
-      "여기다가 원하는 곡의 제목을 적어줘!" +
-        "\n스킵을 하고싶다면 이 명령어를 적어줘 `!s`"
-    )
-    .setImage("attachment://mari.jpg");
+      "듣고 싶은 곡 제목이나 유튜브 링크를 보내줘.\n재생 중에는 버튼으로 일시정지, 스킵, 반복을 조작할 수 있어."
+    );
 
 export const getFailEmbed = () =>
   getColorEmbed()

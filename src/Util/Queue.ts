@@ -106,7 +106,7 @@ export async function removeMusic(
         await message.edit({
           embeds: [getDefaultEmbed()],
           components: [],
-          files: [`${__dirname}/../Image/mari.jpg`],
+          files: [],
         });
       }
     }

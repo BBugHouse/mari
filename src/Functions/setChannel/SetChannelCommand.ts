@@ -32,7 +32,6 @@ const setChannelCommand = new SlashCommand(slashCommand, async function (
   const embed = getDefaultEmbed();
   const message = await channel.send({
     embeds: [embed],
-    files: [`${__dirname}/../../Image/mari.jpg`],
   });
   const messageId = message.id;
   await upsertGuild(interaction.guildId, channel.id, messageId);
