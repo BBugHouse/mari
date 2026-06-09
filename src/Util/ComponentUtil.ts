@@ -29,7 +29,7 @@ export const getPauseButton = () =>
   new ButtonBuilder()
     .setCustomId(PAUSE_BUTTON_ID)
     .setLabel("일시정지")
-    .setStyle(ButtonStyle.Secondary);
+    .setStyle(ButtonStyle.Danger);
 
 export const getResumeButton = () =>
   new ButtonBuilder()
