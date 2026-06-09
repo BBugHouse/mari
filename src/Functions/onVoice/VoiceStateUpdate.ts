@@ -55,6 +55,7 @@ const VoiceStateUpdate = new Event("voiceStateUpdate", async function (
     if (message) {
       await message.edit({
         embeds: [getDefaultEmbed()],
+        components: [],
         files: [`${__dirname}/../../Image/mari.jpg`],
       });
     }

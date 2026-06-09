@@ -43,67 +43,14 @@ function resolveYtDlpCommand(): CommandSpec {
   return candidates[0];
 }
 
+const AUDIO_FORMAT = "bestaudio/best";
+
 function makeSpawnErrorMessage(command: string, error: NodeJS.ErrnoException) {
   if (error.code === "ENOENT") {
     return `${command} executable was not found. Install ${command} and make sure it is in PATH.`;
   }
 
   return `${command} failed to start: ${error.message}`;
-}
-
-async function getBestAudioFormat(url: string): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const ytDlp = resolveYtDlpCommand();
-    const formatCheck = spawn(ytDlp.command, [
-      ...ytDlp.prefixArgs,
-      "--list-formats",
-      "--no-playlist",
-      "--quiet",
-      url,
-    ]);
-
-    let output = "";
-    let errorOutput = "";
-
-    formatCheck.stdout.on("data", (data) => {
-      output += data.toString();
-    });
-
-    formatCheck.stderr.on("data", (data) => {
-      errorOutput += data.toString();
-    });
-
-    formatCheck.on("close", (code) => {
-      if (code !== 0) {
-        console.log("Could not inspect formats, falling back to bestaudio:", errorOutput);
-        resolve("bestaudio");
-        return;
-      }
-
-      const audioFormats = [
-        "bestaudio[ext=m4a]",
-        "bestaudio[ext=webm]",
-        "bestaudio[ext=mp3]",
-        "bestaudio[ext=ogg]",
-        "bestaudio",
-        "best[height<=720]/bestaudio",
-        "worstaudio",
-      ];
-
-      for (const format of audioFormats) {
-        if (output.includes(format) || output.includes("audio only")) {
-          resolve(format);
-          return;
-        }
-      }
-
-      resolve("bestaudio");
-    });
-
-    formatCheck.on("error", (err: NodeJS.ErrnoException) => {
-      reject(new Error(makeSpawnErrorMessage(ytDlp.label, err)));
-    });
-  });
 }
 
 function pipeToFfmpeg(
@@ -137,12 +84,11 @@ function pipeToFfmpeg(
 export function playWithYtDlp(url: string): Promise<AudioResource> {
   return new Promise(async (resolve, reject) => {
     try {
-      const selectedFormat = await getBestAudioFormat(url);
       const ytDlp = resolveYtDlpCommand();
       const ytDlpProcess = spawn(ytDlp.command, [
         ...ytDlp.prefixArgs,
         "-f",
-        selectedFormat,
+        AUDIO_FORMAT,
         "-o",
         "-",
         "--quiet",

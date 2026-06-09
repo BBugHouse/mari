@@ -5,6 +5,7 @@ import {
   VoiceConnectionConnectingState,
 } from "@discordjs/voice";
 import { getDefaultEmbed, getMusicEmbed } from "./EmbedUtil";
+import { getMusicComponents } from "./ComponentUtil";
 import { getOrCreatePlayer } from "./playerRegistry";
 import { playWithYtDlp } from "./youtube";
 
@@ -90,6 +91,7 @@ export async function removeMusic(
       if (message) {
         await message.edit({
           embeds: [getDefaultEmbed()],
+          components: [],
           files: [`${__dirname}/../Image/mari.jpg`],
         });
       }
@@ -150,6 +152,7 @@ export async function playMusic(guildId: string) {
             music.authorName
           ),
         ],
+        components: getMusicComponents(),
         files: [],
       });
     }
