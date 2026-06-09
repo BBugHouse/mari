@@ -11,6 +11,7 @@
     "discord.js": "^14.22.1",
     "ffmpeg-static": "^5.2.0",
     "libsodium-wrappers": "^0.7.15",
+    "opusscript": "^0.0.8",
     "typescript": "^5.9.2",
     "youtubei.js": "^15.1.1",
     "yt-search": "^2.13.1"
