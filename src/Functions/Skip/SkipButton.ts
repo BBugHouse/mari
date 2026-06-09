@@ -1,7 +1,6 @@
-import { getVoiceConnection } from "@discordjs/voice";
 import Button from "../../Structures/Button";
 import { getSkipButton, SKIP_BUTTON_ID } from "../../Util/ComponentUtil";
-import { getMusics, skipMusic } from "../../Util/Queue";
+import { skipMusic } from "../../Util/Queue";
 
 const skipButton = new Button(SKIP_BUTTON_ID, getSkipButton(), async function (
   bot,
@@ -22,32 +21,6 @@ const skipButton = new Button(SKIP_BUTTON_ID, getSkipButton(), async function (
   if (!member?.voice.channelId) {
     await interaction.reply({
       content: "음성 채널에 들어와야 스킵할 수 있어!",
-      flags: "Ephemeral",
-    });
-    return;
-  }
-
-  const connection = getVoiceConnection(interaction.guildId);
-  if (!connection) {
-    await interaction.reply({
-      content: "지금 재생 중인 노래가 없어!",
-      flags: "Ephemeral",
-    });
-    return;
-  }
-
-  if (connection.joinConfig.channelId !== member.voice.channelId) {
-    await interaction.reply({
-      content: "같은 음성 채널에 있어야 스킵할 수 있어!",
-      flags: "Ephemeral",
-    });
-    return;
-  }
-
-  const musics = await getMusics(interaction.guildId);
-  if (musics.length === 0) {
-    await interaction.reply({
-      content: "지금 재생 중인 노래가 없어!",
       flags: "Ephemeral",
     });
     return;

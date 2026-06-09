@@ -53,6 +53,10 @@ function makeSpawnErrorMessage(command: string, error: NodeJS.ErrnoException) {
   return `${command} failed to start: ${error.message}`;
 }
 
+function isExpectedStreamClose(error: NodeJS.ErrnoException) {
+  return error.code === "EPIPE" || error.code === "ERR_STREAM_PREMATURE_CLOSE";
+}
+
 function pipeToFfmpeg(
   ytDlpProcess: ChildProcessWithoutNullStreams
 ): ChildProcessWithoutNullStreams {
@@ -108,9 +112,16 @@ export function playWithYtDlp(url: string): Promise<AudioResource> {
         reject(error);
       };
 
+      const handleStreamError = (error: NodeJS.ErrnoException) => {
+        if (isExpectedStreamClose(error)) return;
+        failOnce(error);
+      };
+
       ytDlpProcess.stderr.on("data", (data) => {
         ytDlpError += data.toString();
       });
+
+      ytDlpProcess.stdout.on("error", handleStreamError);
 
       ytDlpProcess.on("error", (err: NodeJS.ErrnoException) => {
         failOnce(new Error(makeSpawnErrorMessage(ytDlp.label, err)));
@@ -132,6 +143,8 @@ export function playWithYtDlp(url: string): Promise<AudioResource> {
         ffmpegError += data.toString();
       });
 
+      ffmpegProcess.stdin.on("error", handleStreamError);
+
       ffmpegProcess.on("error", (err: NodeJS.ErrnoException) => {
         failOnce(new Error(makeSpawnErrorMessage("ffmpeg", err)));
       });
@@ -146,8 +159,10 @@ export function playWithYtDlp(url: string): Promise<AudioResource> {
         }
       });
 
-      ffmpegProcess.stdout.on("error", (err) => {
-        failOnce(err);
+      ffmpegProcess.stdout.on("error", handleStreamError);
+      ffmpegProcess.stdout.on("close", () => {
+        ytDlpProcess.stdout.unpipe(ffmpegProcess.stdin);
+        if (!ytDlpProcess.killed) ytDlpProcess.kill();
       });
 
       settled = true;
