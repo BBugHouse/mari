@@ -4,6 +4,7 @@ import {
   getMusicComponents,
   getQueueSelectMenu,
 } from "../../Util/ComponentUtil";
+import { getLoopMode, isPaused } from "../../Util/PlaybackState";
 import { getMusics } from "../../Util/Queue";
 
 const queueSelectMenu = new SelectMenu(
@@ -16,7 +17,14 @@ const queueSelectMenu = new SelectMenu(
 
     const musics = await getMusics(interaction.guildId);
     await interaction.message.edit({
-      components: musics.length > 0 ? getMusicComponents(musics) : [],
+      components:
+        musics.length > 0
+          ? getMusicComponents(
+              musics,
+              getLoopMode(interaction.guildId),
+              isPaused(interaction.guildId)
+            )
+          : [],
     });
   }
 );

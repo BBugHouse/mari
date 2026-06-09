@@ -4,7 +4,7 @@ import {
   getMusicComponents,
   LOOP_BUTTON_ID,
 } from "../../Util/ComponentUtil";
-import { nextLoopMode } from "../../Util/PlaybackState";
+import { isPaused, nextLoopMode } from "../../Util/PlaybackState";
 import { getMusics } from "../../Util/Queue";
 
 const loopButton = new Button(LOOP_BUTTON_ID, getLoopButton("continue"), async function (
@@ -16,7 +16,11 @@ const loopButton = new Button(LOOP_BUTTON_ID, getLoopButton("continue"), async f
   const loopMode = nextLoopMode(interaction.guildId);
   await interaction.deferUpdate();
   await interaction.message.edit({
-    components: getMusicComponents(await getMusics(interaction.guildId), loopMode),
+    components: getMusicComponents(
+      await getMusics(interaction.guildId),
+      loopMode,
+      isPaused(interaction.guildId)
+    ),
   });
 });
 

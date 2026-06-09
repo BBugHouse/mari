@@ -6,7 +6,7 @@ import {
 } from "@discordjs/voice";
 import { getDefaultEmbed, getMusicEmbed } from "./EmbedUtil";
 import { getMusicComponents } from "./ComponentUtil";
-import { getLoopMode, requestSkip } from "./PlaybackState";
+import { getLoopMode, isPaused, requestSkip, setPaused } from "./PlaybackState";
 import { getOrCreatePlayer } from "./playerRegistry";
 import { playWithYtDlp } from "./youtube";
 
@@ -76,7 +76,8 @@ export async function addMusic(
         await message.edit({
           components: getMusicComponents(
             await getMusics(guildId),
-            getLoopMode(guildId)
+            getLoopMode(guildId),
+            isPaused(guildId)
           ),
         });
       }
@@ -152,6 +153,7 @@ export async function playMusic(guildId: string) {
     const resource = await playWithYtDlp(music.url);
     console.log("자료 생성 완료");
 
+    setPaused(guildId, false);
     player.play(resource);
     console.log("플레이어 플레이");
 
@@ -167,7 +169,11 @@ export async function playMusic(guildId: string) {
             music.authorName
           ),
         ],
-        components: getMusicComponents(await getMusics(guildId), getLoopMode(guildId)),
+        components: getMusicComponents(
+          await getMusics(guildId),
+          getLoopMode(guildId),
+          isPaused(guildId)
+        ),
         files: [],
       });
     }

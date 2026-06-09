@@ -8,8 +8,7 @@ import type { Music } from "@prisma/client";
 import type { LoopMode } from "./PlaybackState";
 
 export const SKIP_BUTTON_ID = "music_skip";
-export const PAUSE_BUTTON_ID = "music_pause";
-export const RESUME_BUTTON_ID = "music_resume";
+export const PLAY_PAUSE_BUTTON_ID = "music_play_pause";
 export const LOOP_BUTTON_ID = "music_loop";
 export const QUEUE_SELECT_ID = "music_queue_select";
 
@@ -25,17 +24,11 @@ export const getSkipButton = () =>
     .setLabel("스킵")
     .setStyle(ButtonStyle.Secondary);
 
-export const getPauseButton = () =>
+export const getPlayPauseButton = (paused: boolean = false) =>
   new ButtonBuilder()
-    .setCustomId(PAUSE_BUTTON_ID)
-    .setLabel("일시정지")
-    .setStyle(ButtonStyle.Danger);
-
-export const getResumeButton = () =>
-  new ButtonBuilder()
-    .setCustomId(RESUME_BUTTON_ID)
-    .setLabel("다시재생")
-    .setStyle(ButtonStyle.Success);
+    .setCustomId(PLAY_PAUSE_BUTTON_ID)
+    .setLabel(paused ? "다시재생" : "일시정지")
+    .setStyle(paused ? ButtonStyle.Success : ButtonStyle.Danger);
 
 export const getLoopButton = (loopMode: LoopMode) =>
   new ButtonBuilder()
@@ -57,13 +50,13 @@ export const getQueueSelectMenu = (musics: Music[]) =>
 
 export const getMusicComponents = (
   musics: Music[],
-  loopMode: LoopMode = "continue"
+  loopMode: LoopMode = "continue",
+  paused: boolean = false
 ) => {
   const components = [
     new ActionRowBuilder<ButtonBuilder>().addComponents(
       getSkipButton(),
-      getPauseButton(),
-      getResumeButton(),
+      getPlayPauseButton(paused),
       getLoopButton(loopMode)
     ),
   ];

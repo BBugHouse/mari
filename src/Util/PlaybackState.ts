@@ -1,6 +1,7 @@
 export type LoopMode = "continue" | "repeat_once" | "repeat_always";
 
 const loopModes = new Map<string, LoopMode>();
+const pausedGuilds = new Set<string>();
 const skipRequests = new Set<string>();
 
 export function getLoopMode(guildId: string): LoopMode {
@@ -26,6 +27,19 @@ export function resetRepeatOnce(guildId: string) {
   }
 }
 
+export function isPaused(guildId: string) {
+  return pausedGuilds.has(guildId);
+}
+
+export function setPaused(guildId: string, paused: boolean) {
+  if (paused) {
+    pausedGuilds.add(guildId);
+    return;
+  }
+
+  pausedGuilds.delete(guildId);
+}
+
 export function requestSkip(guildId: string) {
   skipRequests.add(guildId);
 }
@@ -38,5 +52,6 @@ export function consumeSkipRequest(guildId: string) {
 
 export function clearPlaybackState(guildId: string) {
   loopModes.delete(guildId);
+  pausedGuilds.delete(guildId);
   skipRequests.delete(guildId);
 }
