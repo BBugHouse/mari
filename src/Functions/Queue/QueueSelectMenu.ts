@@ -4,7 +4,7 @@ import {
   getMusicComponents,
   getQueueSelectMenu,
 } from "../../Util/ComponentUtil";
-import { getMusics, skipMusic } from "../../Util/Queue";
+import { getMusics } from "../../Util/Queue";
 
 const queueSelectMenu = new SelectMenu(
   QUEUE_SELECT_ID,
@@ -13,11 +13,6 @@ const queueSelectMenu = new SelectMenu(
     if (!interaction.guildId) return;
 
     await interaction.deferUpdate();
-
-    const selectedIndex = Number(interaction.values[0]);
-    if (Number.isNaN(selectedIndex)) return;
-
-    await skipMusic(interaction.guildId, selectedIndex);
 
     const musics = await getMusics(interaction.guildId);
     await interaction.message.edit({
