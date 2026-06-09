@@ -6,6 +6,7 @@ import {
 } from "@discordjs/voice";
 import { getDefaultEmbed, getMusicEmbed } from "./EmbedUtil";
 import { getMusicComponents } from "./ComponentUtil";
+import { getLoopMode, requestSkip } from "./PlaybackState";
 import { getOrCreatePlayer } from "./playerRegistry";
 import { playWithYtDlp } from "./youtube";
 
@@ -73,7 +74,10 @@ export async function addMusic(
       const message = await getMainMessage(guildId);
       if (message) {
         await message.edit({
-          components: getMusicComponents(await getMusics(guildId)),
+          components: getMusicComponents(
+            await getMusics(guildId),
+            getLoopMode(guildId)
+          ),
         });
       }
     }
@@ -115,6 +119,7 @@ export async function skipMusic(guildId: string, id: number = 1) {
   const musics = await getMusics(guildId);
   if (musics.length === 0) return;
   if (id === 1) {
+    requestSkip(guildId);
     await stopMusic(guildId);
     return;
   }
@@ -162,7 +167,7 @@ export async function playMusic(guildId: string) {
             music.authorName
           ),
         ],
-        components: getMusicComponents(await getMusics(guildId)),
+        components: getMusicComponents(await getMusics(guildId), getLoopMode(guildId)),
         files: [],
       });
     }

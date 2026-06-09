@@ -4,7 +4,12 @@ import {
   createAudioPlayer,
   getVoiceConnection,
 } from "@discordjs/voice";
-import { getFirstMusics, removeMusic } from "./Queue";
+import { getFirstMusics, playMusic, removeMusic } from "./Queue";
+import {
+  consumeSkipRequest,
+  getLoopMode,
+  resetRepeatOnce,
+} from "./PlaybackState";
 
 const players = new Map<string, AudioPlayer>();
 
@@ -21,6 +26,14 @@ export function getOrCreatePlayer(guildId: string) {
       try {
         const music = await getFirstMusics(guildId);
         if (music) {
+          const isSkip = consumeSkipRequest(guildId);
+          const loopMode = getLoopMode(guildId);
+          if (!isSkip && loopMode !== "continue") {
+            if (loopMode === "repeat_once") resetRepeatOnce(guildId);
+            await playMusic(guildId);
+            return;
+          }
+
           await removeMusic(guildId, music.id);
         }
       } catch (e) {
