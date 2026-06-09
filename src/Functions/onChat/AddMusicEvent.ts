@@ -87,6 +87,12 @@ const AddMusic = new Event("messageCreate", async function (
     video.authorName,
     video.thumbnail
   );
+  const res = await message.channel.send({
+    content: `${video.title} 추가됐어`,
+  });
+  setTimeout(() => {
+    res.delete();
+  }, 1000 * 10);
 });
 
 export default AddMusic;

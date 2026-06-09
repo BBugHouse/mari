@@ -26,13 +26,8 @@ const skipButton = new Button(SKIP_BUTTON_ID, getSkipButton(), async function (
     return;
   }
 
-  await interaction.deferReply({
-    flags: "Ephemeral",
-  });
+  await interaction.deferUpdate();
   await skipMusic(interaction.guildId);
-  await interaction.editReply({
-    content: "스킵했어!",
-  });
 });
 
 export default skipButton;
