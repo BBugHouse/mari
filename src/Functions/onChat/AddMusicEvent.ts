@@ -5,7 +5,6 @@ import { addMusic, skipMusic } from "@/Util/Queue";
 import {
   getVoiceConnection,
   joinVoiceChannel,
-  type DiscordGatewayAdapterCreator,
 } from "@discordjs/voice";
 import { getGuild } from "@/Util/Util";
 import ytSearch from "yt-search";
@@ -72,11 +71,14 @@ const AddMusic = new Event("messageCreate", async function (
     return;
   }
   // 연결
-  joinVoiceChannel({
-    channelId: voiceChannel.id,
-    guildId: message.guildId,
-    adapterCreator: message.guild.voiceAdapterCreator,
-  });
+  const connection = getVoiceConnection(message.guildId);
+  if (!connection || connection.joinConfig.channelId !== voiceChannel.id) {
+    joinVoiceChannel({
+      channelId: voiceChannel.id,
+      guildId: message.guildId,
+      adapterCreator: message.guild.voiceAdapterCreator,
+    });
+  }
   console.log(video.title);
   await addMusic(
     message.guildId,
