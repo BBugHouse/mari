@@ -27,7 +27,7 @@ export const getMusicEmbed = (
 ) =>
   getColorEmbed()
     .setTitle(`🎤 노래 부르는중`)
-    .setDescription(`**앙기모찌 **\n[${title}](${url})`)
+    .setDescription(`[${title}](${url})`)
     .setThumbnail(thumbnail)
     .setFields([
       { name: "시간", value: timestamp, inline: true },
