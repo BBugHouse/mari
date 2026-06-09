@@ -1,10 +1,10 @@
-import {SelectMenuBuilder, SelectMenuInteraction} from 'discord.js';
+import {StringSelectMenuBuilder, StringSelectMenuInteraction} from 'discord.js';
 import Bot from '../Bot/Bot';
 
-type onInteractType = (bot: Bot, interaction: SelectMenuInteraction) => void;
+type onInteractType = (bot: Bot, interaction: StringSelectMenuInteraction) => void;
 
 class SelectMenu {
-	constructor(public readonly customId: string, public readonly selectBuilder: SelectMenuBuilder, public readonly onInteract: onInteractType) {
+	constructor(public readonly customId: string, public readonly selectBuilder: StringSelectMenuBuilder, public readonly onInteract: onInteractType) {
 	}
 }
 

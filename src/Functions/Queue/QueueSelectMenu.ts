@@ -1,0 +1,29 @@
+import SelectMenu from "../../Structures/SelectMenu";
+import {
+  QUEUE_SELECT_ID,
+  getMusicComponents,
+  getQueueSelectMenu,
+} from "../../Util/ComponentUtil";
+import { getMusics, skipMusic } from "../../Util/Queue";
+
+const queueSelectMenu = new SelectMenu(
+  QUEUE_SELECT_ID,
+  getQueueSelectMenu([]),
+  async function (bot, interaction) {
+    if (!interaction.guildId) return;
+
+    await interaction.deferUpdate();
+
+    const selectedIndex = Number(interaction.values[0]);
+    if (Number.isNaN(selectedIndex)) return;
+
+    await skipMusic(interaction.guildId, selectedIndex);
+
+    const musics = await getMusics(interaction.guildId);
+    await interaction.message.edit({
+      components: musics.length > 0 ? getMusicComponents(musics) : [],
+    });
+  }
+);
+
+export default queueSelectMenu;

@@ -8,7 +8,7 @@ import {
   ContextMenuCommandInteraction,
   Interaction,
   ModalSubmitInteraction,
-  SelectMenuInteraction,
+  StringSelectMenuInteraction,
 } from "discord.js";
 import Button from "../Structures/Button";
 import SlashCommand from "../Structures/SlashCommand";
@@ -46,7 +46,7 @@ export default function Initialize(bot: Bot): void {
         const modal: Modal | undefined = modals.get(interaction.customId);
         if (modal === undefined) return;
         modal.onInteract(bot, interaction);
-      } else if (interaction instanceof SelectMenuInteraction) {
+      } else if (interaction instanceof StringSelectMenuInteraction) {
         const selectMenu: SelectMenu | undefined = selectMenus.get(
           interaction.customId
         );

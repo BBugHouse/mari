@@ -69,6 +69,13 @@ export async function addMusic(
     if (musicCountBeforeAdd === 0) {
       await playMusic(guildId);
       console.log("Playing music");
+    } else {
+      const message = await getMainMessage(guildId);
+      if (message) {
+        await message.edit({
+          components: getMusicComponents(await getMusics(guildId)),
+        });
+      }
     }
   } catch (e: any) {
     console.log(e.message);
@@ -155,7 +162,7 @@ export async function playMusic(guildId: string) {
             music.authorName
           ),
         ],
-        components: getMusicComponents(),
+        components: getMusicComponents(await getMusics(guildId)),
         files: [],
       });
     }
